@@ -273,7 +273,7 @@ if (조건 A) {
 }
 ```
 
-- 또는(OR)은 '**||**', 그리고(AND)'는 '**&&**', '같다(EQUAL)'는 '**===**'으로 표기한다.
+- '또는(OR)'은 '**||**', '그리고(AND)'는 '**&&**', '같다(EQUAL)'는 '**===**'으로 표기한다.
 
 ```javascript
 const age = parseInt("11"); 
@@ -302,6 +302,7 @@ if (isNaN(age) || age < 0) {
 - JavaScript을 사용함으로써 HTML과 상호작용할 수 있다.
 - 브라우저의 Document 객체는 웹페이지 그 자체를 의미하며, Document는 HTML이 js파일을 불러오기 때문에 존재한다. 
 - Document를 통해 JavaScript에서 웹페이지에 존재하는 HTML 요소에 접근할 수 있다.
+  - body, head, title 등 주요 HTML 요소들은 이미 Document의 프로퍼티로서 존재하기 때문에 `document.body`, `document.head`, `document.title`과 같은 형태로 직접 접근할 수 있다.
   - Document의 `getElementById()`, `getElementsByClassName()`, `getElementsByTagName()` 등의 메소드를 통해 HTML 요소를 가져오고, 변경할 수 있다.
   - `querySelector()`를 사용하면 CSS selector를 통해 HTML 요소를 지정할 수 있다.
     - 이 때, id는 '**.**', class는 '**#**'를 이름 앞에 붙여서 표기
@@ -373,40 +374,57 @@ console.log(title2); // <h1>If you can</h1> 출력.
 
 - 이벤트 핸들러를 등록하는 방식 중에서도 `addEventListener()` 메소드를 이용하는 방식이 일반적으로 권장된다.
 
-  - console.dir()로 DOM 요소를 조회했을 때 '**on**'으로 시작하는 프로퍼티가 event listener이다.
+  - console.dir()로 DOM 요소를 조회했을 때 '**on**'으로 시작하는 프로퍼티들은 event listener이다.
 
   - 아래의 형태로 대상 DOM 요소에 이벤트를 바인딩하고 이벤트가 발생했을 때 실행될 콜백 함수<sup>[1](#footnote_1)</sup>를 지정한다.
+
+  - `removeEventListener()` 메소드로 바인딩한 이벤트를 제거할 수 있다.
 
     ```javascript
     EventTarget.addEventListener('eventType', functionName, [, useCapture]);
     // 대상요소                      이벤트        콜백 함수      capture 사용 여부{true: capturing / false: bubbling(default)}
     ```
 
+  - 웹페이지를 열고 있는 브라우저의 창 즉, **window**를 대상요소로 지정할 수도 있으며, 이벤트로는 '**resize**', '**copy**' 등이 있다.
+
   ```javascript
-  const title = document.querySelector("h1.hello:first-child");
+  const h1 = document.querySelector("h1.hello:first-child");
   
   function handleTitleClick() {
-      title.style.color = "blue";
+      h1.style.color = "blue";
   }
   
   function handleMouseEnter() {
-      title.innerText = "mouse is here!";
+      h1.innerText = "Mouse is here!";
   }
   
   function handleMouseLeave() {
-      title.innerText = "mouse is gone!";
+      h1.innerText = "Mouse is gone!";
+  }
+  
+  function handleWindowResize() {
+      document.body.style.backgroundColor = "red";
+  }
+  
+  function handleWindowCopy() {
+      alert("You copied something!");
   }
   
   // (1)
-  title.addEventListener("click", handleTitleClick);
-  // 웹페이지에서 title에 해당하는 html 요소인 'Catch me' 를 클릭할 시 파란색으로 변함
+  h1.addEventListener("click", handleTitleClick);
+  h1.onclick = handleTitleClick; // 프로퍼티에 이벤트 핸들러를 직접 할당하는 방식도 가능하다.
+  // 웹페이지에서 title에 해당하는 html 요소인 'Catch me'를 클릭할 시 파란색으로 변함
   
   // (2)
-  title.addEventLIstener("mouseenter", handleMouseEnter); // 웹페이지에서 'Catch me'에 커서를 올려놓을 시 'mouse is here!'로 변함
-  title.addEventLIstener("mouseleave", handleMouseLeave); // 웹페이지에서 'Catch me'에 커서를 올려놓을 시 'mouse is gone!'로 변함
+  h1.addEventListener("mouseenter", handleMouseEnter); // 웹페이지에서 'Catch me'에 커서를 올려놓을 시 'Mouse is here!'로 변함
+  h1.addEventListener("mouseleave", handleMouseLeave); // 웹페이지에서 'Catch me'에 커서를 올려놓을 시 'Mouse is gone!'로 변함
+  
+  // (3)
+  window.addEventListener("resize", handleWindowResize); // 브라우저의 창 크기를 변경할 시 웹페이지의 배경색이 빨간색으로 변함.
+  window.addEventListener("copy", handleWindowCopy);
   ```
 
-  
+- 
 
 <a name="footnote_1">1</a>: 다른 코드의 인수(argument)로서 넘겨주는 실행 가능한 코드를 의미한다. 콜백을 넘겨받은 코드는 실행이 종료된 후 필요에 따라 콜백을 즉시 혹은 나중에 실행한다.
 
@@ -414,12 +432,12 @@ console.log(title2); // <h1>If you can</h1> 출력.
 
 - JavaScript 이벤트 총정리
 
-​		https://inpa.tistory.com/entry/JS-%F0%9F%93%9A-%EC%9D%B4%EB%B2%A4%ED%8A%B8-%F0%9F%92%AF-%EC%B4%9D-%EC%A0%95%EB%A6%AC
+​		<https://inpa.tistory.com/entry/JS-%F0%9F%93%9A-%EC%9D%B4%EB%B2%A4%ED%8A%B8-%F0%9F%92%AF-%EC%B4%9D-%EC%A0%95%EB%A6%AC>
 
 - 버블링과 캡처링
 
-  https://ko.javascript.info/bubbling-and-capturing
+<https://ko.javascript.info/bubbling-and-capturing>
 
 - 이벤트의 종류
 
-  https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement#events
+<https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement#events>
