@@ -111,15 +111,15 @@ last_modified_at: 2023-02-08T13:18:17-04:00
   - **Non-contiguous Allocation (불연속 할당)**
     - 하나의  프로세스가 메모리의 여러 영역에 분산되어 올라갈 수 있는 것
     - 종류
-      - **Paging**
-      - **Segmentation**
-      - **Paged segmentation**
+      - **Paging**: Logical/Physical Memory를 고정된 크기의 블록인 Page/Frame으로 나눔
+      - **Segmentation**: Logical Memory를 가변적 크기의 논리적 단위로 나눔
+      - **Paged segmentation**: Memory를 논리적 단위로 나누고 각 Segment별로 Paging 적용
 
 
 
 ### 1. Contiguous Allocation (연속 할당)
 
-#### a. 메모리 연속할당 방식
+#### a. 메모리 연속할당 방식의 종류
 
 <img src="C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230214163235078.png" alt="image-20230214163235078" style="zoom:50%;" /> 
 
@@ -194,7 +194,7 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
 #### a. Paging
 
-##### a-1. Paging의 정의와 동작 원리
+##### a-1. Paging의 정의와 동작 방식
 
 <img src="C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230220154725396.png" alt="image-20230220154725396" style="zoom:50%;" />  
 
@@ -206,7 +206,7 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
 <img src="C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230220154853092.png" alt="image-20230220154853092" style="zoom: 67%;" /> 
 
-- 동작 원리 및 특징
+- 동작 방식 및 특징
 
   - physical memory를 동일한 크기의 **frame**으로 나눔
 
@@ -393,7 +393,7 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
 - 각 단계의 페이지 테이블이 메모리에 존재하므로 logical address의 physical address 변환에 더 많은 메모리 접근 필요
 
-- TLB를 통해 메모리 접근 시간을 줄일 수 있음
+  -> TLB를 통해 메모리 접근 시간을 줄일 수 있음
 
 - 4단계 페이지 테이블을 사용하는 경우
 
@@ -409,9 +409,145 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
       ​	 주소 변환을 위해 28ns만 소요
 
-##### a-6. Valid (v) / Invalid (i) Bit in a Page Table
+##### a-6. Memory Protection을 위한 Page Table Entry의 bit
+
+###### Protection bit
+
+- page에 대한 접근 권한 (read/write/read-only)을 나타내는 bit
+  - page가 프로세스의 code 영역을 담고 있다면, 입력된 instruction을 수행할 뿐 내용이 바뀌어선 안 되므로 read-only
+  - data / stack 영역은 데이터를 중간에 수정하는 것이 가능하므로 read와 write
+
+###### Valid (v) - Invalid (i) Bit
+
+###### <img src="C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230306214742906.png" alt="image-20230306214742906"  />  
 
 - page table 자료구조의 특성상 시작 주소로부터의 index를 통해 각 page에 접근하기 때문에 프로세스의 주소공간 중 사용되지 않는 영역에 대해서도 page table entry가 만들어져야 함
+
+  -> page table entry마다 해당 page가 사용되고 있는지(메모리에 올라와 있는지)를 구분할 수 있는 bit를 사용 
+
+- **valid(1)**는 해당 주소의 frame에 그 프로세스를 구성하는 유효한 내용이 있다는 뜻이고, 
+
+  **invalid(0)**는 frame에 유효한 내용이 없음을 뜻함
+
+  		1. 프로세스가 그 주소 부분을 사용하지 않는 경우
+  		1. 해당 페이지가 메모리에 올라와 있지 않고 swap area에 있는 경우
+
+- page table을 통해 logical memory에서 physical memory로 접근할 때 
+
+  - valid하다면 바로 해당 페이지로 접근
+  - invalid하다면 **Page Fault**가 발생
+
+##### a-7. Inverted Page Table
+
+<img src="C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230306222929904.png" alt="image-20230306222929904" style="zoom:67%;" /> 
+
+- page table의 용량이 큰 이유
+  - 모든 process 별로 그 logical address에 대응하는 모든 page에 대해 page table entry가 존재
+  
+  - 대응하는 page가 메모리에 있든 아니든 간에 page table에는 entry로 존재
+  
+    -> page table의 용량을 줄이기 위해 Inverted Page Table 사용 가능
+  
+- Inverted Page Table
+  
+  - Page Table이 프로세스마다 하나씩 있는 게 아니라 시스템 전체에 하나 존재
+  - Page frame 하나 당 page table에 하나의 entry를 둔 것
+  - 각 page table entry는 각각의 물리적 메모리의 page frame이 담고 있는 내용 표시
+    - 단점 : 프로세스 id(pid)와 논리주소의 페이지(p)를 찾기 위해 테이블 전체를 탐색해야 함 -> 시간적인 overhead
+    - 조치 : page table을 associative register에 집어넣어 entry들을 병렬적으로 검색 (단, expensive)
+  
+
+##### a-8. Shared Pages
+
+###### Shared code
+
+<img src="C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230306223641164.png" alt="image-20230306223641164" style="zoom:67%;" /> 
+
+- 여러 process가 공유할 수 있는 code를 physical memory 상의 같은 frame으로 매핑하는 기법
+
+  - 동일한 코드가 메모리에 한 번만 적재되므로 메모리를 아낄 수 있음
+  - Re-entrant code(재진입 코드)라고도 불림
+
+- read-only로 하여 프로세스 간에 하나의 code만 메모리에 올림
+
+  (ex_ text editors, compilers, window systems)
+
+  <-> Shared Memory가 read와 write가 가능한 반면, Shared code는 read-only 
+
+  ​		(Process Management의 프로세스 간 협력 부분 참고)
+
+-  Shared code는 모든 프로세스에서 동일한 logical address를 가져야 함
+
+  - 동일한 shared code는 프로세스 A의 주소공간에서 1번이라면 프로세스 B의 주소공간에서도 1번이어야 함
+
+- 반면, Private code and data의 경우
+
+  - 각 프로세스들은 독자적으로 메모리에 올라옴
+  - Private data는 logical address space의 아무 곳에 와도 무방 
+
+
+
+#### b. Segmentation
+
+##### b-1. Segmentation의 정의
+
+- 프로세스는 논리적(의미) 단위인 여러 개의 segment로 구성
+  - 작게는 프로그램을 구성하는 함수 하나하나, 크게는 프로그램 전체를 하나의 세그먼트로 정의 가능
+  - 일반적으로는 code, data, stack 부분이 각각 하나의 segment로 정의됨
+
+##### b-2. Segmentation의 구성 요소와 동작 방식
+
+<img src="C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230310184729247.png" alt="image-20230310184729247" style="zoom:67%;" /> 
+
+- 구성 요소
+  - Logical address는 <**segment number**, **offset**> 두 가지로 구성
+  - Segment table : Segment별 주소 변환
+    - table의 각 entry는 다음을 포함
+      - base - 해당 segment의 시작점인 physical address
+      - limit - 해당 segment의 길이
+  - Segment table base register(STBR)
+    - 물리적 메모리에서의 segment table의 위치
+  - Segment table length register(STLR)
+    - 프로그램이 사용하는 segment의 수
+      - 위 그림에서 segment number, s가 STLR
+
+- 동작 방식
+
+  - logical address의 segment number (s) 가 STLR의 값보다 크거나,
+
+    ​									  offset (d) 이 해당 entry의 limit보다 크다면  -> trap 발생
+
+  - 정상적인 요청이라면  -> segment의 시작 위치 (base)에 offset (d)을 더해 주소 변환
+
+    - base 위치만큼 떨어진 곳에서 segment가 시작, segment의 시작점에서 d만큼 떨어진 곳에 원하는 주소의 내용이 있음
+
+- Paging과 Segmentation 비교
+
+  | Paging                                       | Segmentation                                                 |
+  | -------------------------------------------- | ------------------------------------------------------------ |
+  | offset의 크기가 고정된 Page 크기에 의해 제한 | offset을 표현할 수 있는 bit 수에 의해 제한                   |
+  | 시작 주소가 frame 번호로 주어짐              | 시작 주소가 정확한 Byte 단위 주소로 주어짐                   |
+  | 내부 단편화 O, 외부 단편화 X                 | 외부 단편화 O, 내부 단편화 X<br />(segment 길이 가변적, 가변분할 방식과 동일한 문제점) |
+
+- Segmentation의 장점
+
+  - segment는 의미 단위이기 때문에 보안(protection)과 공유(sharing)에 있어 paging보다 효과적임
+
+  - 보안
+
+    - 권한 부여는 의미 단위로 이루어짐 (ex_ code는 read-only, data는 read & write)
+
+      - paging의 경우, 프로그램을 동일한 크기의 page로 자르면 한 page에 code와 data가 들어갈 수 있는데 이때 어떤 권한을 부여할지 불명확
+
+        -> 의미 단위로 protection 해야 하는 경우 다른 page에 위치시키는 등의 부가적인 작업 수행
+
+      - segmentation의 경우, 접근 제어 키를 사용하여 segment 별로 허용되는 작업을 제어하여, 사용자의 잘못된 접근으로부터 보호될 수 있음
+  
+  - 공유
+  
+    - 공유해야 하는 프로시저가 커서 몇 개의 페이지로 나누어진다면, 이 페이지의 엔트리는 공유하는 프로세스들의 페이지 테이블에서 모두 같은 위치에 있어야 하므로 테이블의 구성이 어려움
+    - 공유 프로시저의 크기가 페이지의 크기로 정확하게 나누어떨어지지 않을 경우, 공유할 필요가 없거나 공유해선 안되는 부분이 공유 페이지에 포함될 수도 있음
+
 
 
 
@@ -518,3 +654,8 @@ https://ddongwon.tistory.com/49
 Effective Access Time (EAT)
 
 https://www.cukashmir.ac.in/cukashmir/User_Files/imagefile/DIT/StudyMaterial/OperatingSystemBTech/BTechCSE_3_Rizwana_BTCS304_unit3_B.pdf
+
+Segment 보호와 공유
+
+https://itdexter.tistory.com/409
+
