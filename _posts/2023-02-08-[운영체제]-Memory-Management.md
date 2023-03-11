@@ -226,7 +226,7 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
 ##### a-2. Page table
 
-###### Page table이란?
+###### Page table이란?<sup>[2](#footnote_2)</sup>
 
 - logical address와 physical address를 매핑하는 테이블
 
@@ -320,7 +320,7 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
   - 프로세스마다 개별적인 page table과 TLB가 존재하고, 다른 프로세스로 CPU가 넘어가면 page table의 주소변환 정보도 달라지므로
 
-###### Effective Access Time (실질 메모리 접근 시간, 유효 접근 시간, EAT)
+###### Effective Access Time (실질 메모리 접근 시간, 유효 접근 시간, EAT)<sup>[3](#footnote_3)</sup>
 
 - CPU가 요구한 데이터를 읽는 데 걸리는 평균 시간을 측정하는 성능 지표
 
@@ -489,11 +489,12 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
 #### b. Segmentation
 
-##### b-1. Segmentation의 정의
+##### b-1. Segmentation의 정의와 특징
 
 - 프로세스는 논리적(의미) 단위인 여러 개의 segment로 구성
   - 작게는 프로그램을 구성하는 함수 하나하나, 크게는 프로그램 전체를 하나의 세그먼트로 정의 가능
   - 일반적으로는 code, data, stack 부분이 각각 하나의 segment로 정의됨
+- Paging이 전혀 가미되지 않은 original segmentation을 사용하는 메모리 시스템은 현실적으로 없음
 
 ##### b-2. Segmentation의 구성 요소와 동작 방식
 
@@ -508,7 +509,7 @@ last_modified_at: 2023-02-08T13:18:17-04:00
   - Segment table base register(STBR)
     - 물리적 메모리에서의 segment table의 위치
   - Segment table length register(STLR)
-    - 프로그램이 사용하는 segment의 수
+    - 프로그램이 사용하는 segment의 수 ( = segment table의 크기)
       - 위 그림에서 segment number, s가 STLR
 
 - 동작 방식
@@ -523,15 +524,16 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
 - Paging과 Segmentation 비교
 
-  | Paging                                       | Segmentation                                                 |
-  | -------------------------------------------- | ------------------------------------------------------------ |
-  | offset의 크기가 고정된 Page 크기에 의해 제한 | offset을 표현할 수 있는 bit 수에 의해 제한                   |
-  | 시작 주소가 frame 번호로 주어짐              | 시작 주소가 정확한 Byte 단위 주소로 주어짐                   |
-  | 내부 단편화 O, 외부 단편화 X                 | 외부 단편화 O, 내부 단편화 X<br />(segment 길이 가변적, 가변분할 방식과 동일한 문제점) |
+  | Paging                                                       | Segmentation                                                 |
+  | ------------------------------------------------------------ | ------------------------------------------------------------ |
+  | offset의 크기가 고정된 Page 크기에 의해 제한                 | offset을 표현할 수 있는 bit 수에 의해 제한                   |
+  | 시작 주소가 frame 번호로 주어짐                              | 시작 주소가 정확한 Byte 단위 주소로 주어짐                   |
+  | 내부 단편화 O, 외부 단편화 X                                 | 외부 단편화 O, 내부 단편화 X<br />(segment 길이 가변적이므로 가변분할 방식과 동일한 문제점 발생) |
+  | 보통 page 하나의 크기가 4KB로 상대적으로 작아,<br />page table이 상대적으로 더 많은 메모리를 차지 | segment의 크기가 상대적으로 커서, <br />segment table이 상대적으로 더 적은 메모리를 차지 |
 
 - Segmentation의 장점
 
-  - segment는 의미 단위이기 때문에 보안(protection)과 공유(sharing)에 있어 paging보다 효과적임
+  - segment는 의미 단위이기 때문에 보안(protection)과 공유(sharing)에 있어 paging보다 효과적임<sup>[4](#footnote_4)</sup>
 
   - 보안
 
@@ -542,13 +544,55 @@ last_modified_at: 2023-02-08T13:18:17-04:00
         -> 의미 단위로 protection 해야 하는 경우 다른 page에 위치시키는 등의 부가적인 작업 수행
 
       - segmentation의 경우, 접근 제어 키를 사용하여 segment 별로 허용되는 작업을 제어하여, 사용자의 잘못된 접근으로부터 보호될 수 있음
-  
+
   - 공유
-  
+
     - 공유해야 하는 프로시저가 커서 몇 개의 페이지로 나누어진다면, 이 페이지의 엔트리는 공유하는 프로세스들의 페이지 테이블에서 모두 같은 위치에 있어야 하므로 테이블의 구성이 어려움
     - 공유 프로시저의 크기가 페이지의 크기로 정확하게 나누어떨어지지 않을 경우, 공유할 필요가 없거나 공유해선 안되는 부분이 공유 페이지에 포함될 수도 있음
 
+##### b-3. 예시
 
+![image-20230311212522224](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230311212522224.png) 
+
+- 두 개의 프로세스가 Segment를 공유하는 경우 (shared segment)
+
+![image-20230311212637153](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230311212637153.png) 
+
+
+
+#### c. Paged Segmentation
+
+- segment 하나를 여러 개의 page로 구성
+
+- segment table을 통해, segment의 주소(s, d)를 segment의 page table의 주소, page number(p)와 page의 offset(d')로 변환
+
+  -> 해당 segment의 page table을 통해, 해당 page number(p)에 상응하는 frame(f)를 찾아 조회
+
+  ![image-20230311214510187](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230311214510187.png) 
+
+- pure segmentation과의 차이점
+
+  - segment table entry가 segment의 base address를 가지고 있는 것이 아니라, 
+
+    segment를 구성하는 page table의 base address를 가지고 있음
+
+  - 외부 단편화(external fragmentation) 문제 없음
+
+    - 물리적인 메모리에는 page 단위로 올라가고 segment는 n개의 page로 구성
+
+  - 의미 단위로 이루어지는 공유, 보안 등은 segment table level에서 관리
+
+    
+
+## 주소 변환과 OS
+
+- Logical Address를 Physical Address로 변환하는 일련의 과정은 Memory Management Unit 등에 의해 하드웨어적으로 이루어지며, 이때 OS는 개입하지 않는다.
+
+  - CPU를 갖고 있는 프로세스가 매 클럭 사이클마다 메모리에서 데이터를 읽어들여서 CPU를 실행하고, 
+
+    이때 메모리에 접근하기 위해 주소 변환을 할 때마다 CPU가 운영체제로 넘어갈 수는 없음
+
+    
 
 
 ## 용어 정리
@@ -645,17 +689,17 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
 https://en.wikipedia.org/wiki/Segmentation_fault
 
-Page Table
+<a name="footnote_2">2</a>. Page Table
 
 http://egloos.zum.com/sweeper/v/2988646
 
 https://ddongwon.tistory.com/49
 
-Effective Access Time (EAT)
+<a name="footnote_3">3</a>. Effective Access Time (EAT)
 
 https://www.cukashmir.ac.in/cukashmir/User_Files/imagefile/DIT/StudyMaterial/OperatingSystemBTech/BTechCSE_3_Rizwana_BTCS304_unit3_B.pdf
 
-Segment 보호와 공유
+<a name="footnote_4">4</a>. Segment 보호와 공유
 
 https://itdexter.tistory.com/409
 
