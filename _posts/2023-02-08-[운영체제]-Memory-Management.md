@@ -270,35 +270,39 @@ last_modified_at: 2023-02-08T13:18:17-04:00
 
   2. (1) 검색이 성공하면 (**TLB hit**) -> 즉시 **physical address를 반환**하며, 프로세스는 해당 주소로 접근이 가능하다. -> **OUT**
 
-     (2) 검색이 실패하면 (**TLB miss**) -> 통상적으로 핸들러는 해당 logical address에 매핑된 physical address가 있는지 **페이지 테이블을 검색**하게 된다. 
+     (2) 검색이 실패하면 (**TLB miss**) -> 통상적으로 핸들러는 해당 logical address에 매핑된 physical address가 있는지 **페이지 테이블을 검색**하게 된다. (2번의 메모리 접근 필요)
 
-     ​															(2번의 메모리 접근 필요)
+  3. (1) 페이지 테이블에서 일치하는 매핑 데이터를 찾았다면 (**page table hit**) -> 
 
-  3. (1) 페이지 테이블에서 일치하는 매핑 데이터를 찾았다면 (**page table hit**) -> 해당 정보를 TLB에 업데이트(**TLB write**)하고 
-
-     ​																									 1번으로 돌아가 해당 logical address의 translation 요청 재개 -> **OUT**
+     ​	  해당 정보를 TLB에 업데이트(**TLB write**)하고 1번으로 돌아가 해당 logical address의 translation 요청 재개 -> **OUT**
 
      (2) 페이지 테이블에서 일치하는 매핑 데이터를 찾지 못했다면 (**page not present**) -> 
 
-  ​																												logical address가 유효하지 않거나,
+     ​	   logical address가 유효하지 않거나,
 
-  ​																											 	(이 경우, OS는 해당 주소 접근을 요청한 프로세스에게 segmentation fault 발생시킴)
+     ​			(이 경우, OS는 해당 주소 접근을 요청한 프로세스에게 segmentation fault 발생시킴)
 
-  ​																											 	logical address가 physical address에 존재하지 않기 때문 
+     ​		logical address가 physical address에 존재하지 않기 때문 
 
-  ​																											 	(물리 메모리 공간이 부족해 하드디스크의 보조 저장소, **paging file**로 **page-out**된 상황)
+     ​			(물리 메모리 공간이 부족해 하드디스크의 보조 저장소, **paging file**로 **page-out**된 상황)
 
-  2. 해당 logical address가 physical address에 존재하지 않는다면 -> 
+  4. 해당 logical address가 physical address에 존재하지 않는다면 -> 
 
-     (1) physical memory가 꽉 차지 않았다면 (empty frame이 존재한다면) -> paging file에 존재하는 데이터를 empty frame으로 로드하고,
+     (1) physical memory가 꽉 차지 않았다면 (empty frame이 존재한다면) -> 
 
-     ​																															  page table과 TLB의 내용 갱신 (**page table write & table write**)
+     ​      paging file에 존재하는 데이터를 empty frame으로 로드하고, page table과 TLB의 내용 갱신 
 
-     (2) physical memory가 꽉 찼다면 (empty frame이 없다면) -> RAM에서 empty로 변경할 페이지를 찾고,
+     ​      (**page table write & table write**)
 
-     ​																										  페이지의 데이터가 변경되었다면 paging file에 쓴 후 empty frame으로 변환한 뒤,
+     (2) physical memory가 꽉 찼다면 (empty frame이 없다면) -> 
 
-     ​																										  해당 empty frame에 원래 load하려던 데이터를 load하고 page table과 TLB의 내용 갱신
+     ​       RAM에서 empty로 변경할 페이지를 찾고,
+
+     ​       페이지의 데이터가 변경되었다면 paging file에 쓴 후 empty frame으로 변환한 뒤,
+
+     ​       해당 empty frame에 원래 load하려던 데이터를 load하고 page table과 TLB의 내용 갱신
+
+     
 
 - TLB는 특정 항목이 아닌 전체를 search해야 하므로 시간이 오래 걸림
 

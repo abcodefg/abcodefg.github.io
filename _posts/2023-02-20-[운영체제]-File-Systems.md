@@ -202,3 +202,220 @@ last_modified_at: 2023-02-20T12:10:55-04:00
 
         ​																 직접 접근은  b를 건너뛰고 c에 바로 접근할 수 있음
 
+
+
+## Allocation of File Data in Disk
+
+- Disk에 File을 저장할 때는 동일 크기의 sector로 나누어 저장
+- File data를 sector에 할당하는 방법에는 다음과 같은 것들이 있음
+  - Contiguous allocation
+  - Linked Allocation
+  - Indexed Allocation
+
+### a. Contiguous Allocation (연속 할당)
+
+- **리스트**처럼 할당
+- 각 파일에 대해 **Disk 상의 연속된 블록**을 할당
+- 단점
+  - **external fragmentation**
+  - **File 크기를 키우기 어려움**
+    - file 생성시 얼마나 큰 hole을 할당할 것인지가 문제
+    - 크기가 커질 것을 대비해 예비 공간을 할당하면 다른 파일이 해당 공간을 사용하지 못하므로 internal fragmentation이 발생
+- 장점
+  - **Fast I/O**
+    - 한 번의 seek/rotation으로 많은 바이트 trasnfer (파일이 연속적으로 저장되어 있으므로)
+    - Realtime file(deadline이 있는) 용 혹은 이미 run 중인 process의 swapping 용으로 적합
+  - **직접 접근 (direct access)**과 **순차 접근 (sequential access)** 모두 가능
+- 아래 그림에서 연속 할당 시에 디렉토리가 포함하고 있는 파일들의 metadata를 확인할 것
+
+<img src="C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328221204188.png" alt="image-20230328221204188"  /> 
+
+
+
+### b. Linked Allocation (연결 할당)
+
+- **연결 리스트**처럼 할당
+- 각 블록이 **다음 블록을 가리키는 포인터**를 저장
+  - 디렉토리는 file의 시작 위치만 가지고 있고 이후에는 특정 위치가 다음 위치를 기록해두고 있음
+  - 각 블록은 포인터를 저장하기 위해 4바이트 혹은 그 이상 소모
+- 장점
+  - external fragmentation 발생 안 함
+- 단점
+  - **직접 접근이 불가**하고 순차 접근만 가능
+  - **Reliability 문제**
+    - 한 sector가 고장나 포인터가 유실되면 많은 부분을 잃음
+  - 포인터를 위한 공간이 블록의 일부가 되어 공간 효율성을 떨어뜨림
+    - 512 bytes/sector, 4 bytes/pointer
+- 변형
+  - **File Allocation Table (FAT)** 파일 시스템
+    - **포인터를 별도의 위치에 보관**하여 reliability 문제와 공간효율성 문제 해결
+
+![image-20230328222412761](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328222412761.png) 
+
+
+
+### c. Indexed Allocation (색인 할당)
+
+- 데이터 블록 외에도 파일마다 **포인터의 모음인 인덱스 블록**을 한 개씩 둠
+  - 디렉토리는 인덱스 블록을 가리킴
+- 장점
+  - external fragmentation이 발생 안 함
+  - 직접 접근 가능
+- 단점
+  - small file의 경우 공간 낭비 (실제로 많은 파일들이 small)
+  - Too large file의 경우 하나의 블록으로 인덱스를 저장하기에 부족
+    - 해결 방안
+      - linked : 인덱스 블록이 다른 인덱스 블록을 가리키게 함
+      - multi-level : 인덱스 블록을 여러 계층으로 구성 (인덱스 블록 -> 하위 인덱스 블록 -> ... -> 데이터 블록)
+      - combined : linked와 multilevel을 합침
+
+![image-20230328223745055](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328223745055.png) 
+
+- 위의 파일 시스템의 할당에 관한 이론이 실제 파일 시스템에서 어떻게 적용되는지 확인해보자
+
+
+
+## UNIX의 파일 시스템
+
+![image-20230328224900715](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328224900715.png) 
+
+- 파일 시스템의 가장 기본적인 구조이며, 이를 효율적으로 개선시킴으로써 많은 파일 시스템들이 파생되었음
+
+- 유닉스 파일 시스템의 중요 개념
+
+  - **Boot block**
+
+    - **부팅에 필요한 정보** (**bootstrap loader**)
+      - 파일 시스템에서 OS 커널의 위치를 찾고 메모리에 올려 정상적인 부팅이 이루어지게 함
+    - 어떤 파일 시스템이든 Boot block이 제일 앞에 위치
+
+  - **Super block**
+
+    - 파일 시스템에 관한 **총체적인 정보**
+      - 어디까지 Inode list이고 어디부터 data block인지, 어느 블록이 비어 있고 어디가 사용중인지 등
+
+  - **Inode list**
+
+    - **파일 이름을 제외**한 **파일의 모든 메타 데이터**를 저장
+
+      - directory file은 파일 이름과 inode 번호를 포함
+
+    - 파일 하나 당 inode가 하나씩 할당
+
+      - 크기가 큰 파일도 하나의 inode로 저장 위치를 나타낼 수 있어야 함
+
+        -> 크기가 작은 경우 data blocks만으로, 
+
+        ​	크기가 클 경우 single, double, triple indirect 등 여러 계층의 인덱스를 활용
+
+        ​	(indexed allocation의 **multilevel** indexing 참조)
+
+  - **Data block**
+
+    - 파일의 실제 내용을 보관
+
+
+
+## FAT 파일 시스템
+
+- Microsoft가 MS-DOS를 개발했을 때 처음 만든 파일 시스템
+
+![image-20230328230957794](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328230957794.png) 
+
+- Linked Allocation 활용하되 어떤 블록의 다음 블록을 가리키는 포인터를 FAT이라는 테이블에 저장
+- FAT 시스템은 Linked allocation의 문제를 대부분 해결할 수 있음
+  - No direct access -> FAT을 한 번만 읽으면 직접 접근 가능
+  - Reliability 문제 -> FAT에 문제가 없다면 중간 블록에 문제 생겨도 다음 블록을 읽을 수 있음
+    - FAT은 중요한 정보를 담고 있기 때문에 손실 시 복구를 위해 이중 저장
+  - 공간 효율성 문제 -> 별도로 저장되기 때문에 섹터에 할당된 512 byte 온전히 활용 가능
+- FAT은 컴퓨터가 부팅될 때 OS에 의해 메모리에 적재됨
+
+
+
+## Free Space Management
+
+- 비어있는 블록을 관리하는 방법들
+
+### a. Bit map or bit vector
+
+![image-20230328233131952](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328233131952.png) 
+
+- Bit map은 Disk에 부가적인 공간을 필요로 함
+- 연속적인 가용 공간을 찾는 데 효과적
+  - 연속적으로 0인 영역
+
+### b. Linked List
+
+- 모든 free block들을 링크로 연결 (free list)
+- bit map과 달리 공간의 낭비 없음
+- 연속적인 가용공간을 찾는 것 쉽지 않음
+
+### c. Grouping
+
+- linked list 방법의 변형
+- 첫 번째 free block이 n개의 포인터를 가짐
+  - 처음 n-1개의 포인터는 free data block을 가리킴
+  - 마지막 포인터가 가리키는 블록은 또 동일한 구조의 n 개의 포인터를 가짐
+- 연속적인 가용공간을 찾는 것 쉽지 않음
+
+### d. Counting
+
+- 프로그램들이 종종 여러 개의 연속적인 block을 할당하고 반납한다는 성질에 착안
+- (first free block, # of contiguous free blocks) 의 구조
+
+
+
+## Directory Implementation
+
+- 디렉토리를 구현하는 방법
+
+### a. directory file의 구조
+
+#### a-1. Linear List
+
+![image-20230328234251240](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328234251240.png) 
+
+- <file name, file의 metadata>의 list
+- 구현이 간단
+- 디렉토리 내에 파일이 있는지 찾기 위해서 linear search 필요하므로 비효율적
+
+#### a-2. Hash Table
+
+![image-20230328234313986](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328234313986.png) 
+
+- linear list + hashing
+- Hash table은 file name을 이 파일을 linear list의 위치로 바꾸어 줌
+- search time을 없앰
+  - hashing을 적용한 값에 해당하는 위치로 바로 접근하므로
+- collision 발생 가능 (hashing)
+
+### b. File의 metadata 보관 위치
+
+- 디렉토리 내에 직접 보관
+- 디렉토리에는 포인터를 두고 다른 곳에 보관
+  - inode, FAT 등
+
+### C. Long file name의 지원
+
+- <file name, file의 metadata>의 list에서 각 entry는 일반적으로 고정 크기
+- file name이 고정 크기의 entry 길이보다 길어지는 경우 entry의 마지막 부분에 이름의 뒷부분이 위치한 곳의 포인터를 두는 방법
+- 이름의 나머지 부분은 동일한 directory file의 일부에 존재
+
+![image-20230328235039811](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328235039811.png) 
+
+
+
+## VFS와 NFS
+
+- **VFS (Virtual File System)**
+  - 서로 다른 다양한 FIEL SYSTEM에 대해 동일한 시스템 콜 인터페이스(API)를 통해 접근할 수 있게 해주는 OS의 계층
+
+- **NFS (Network File System)**
+  - 분산 시스템에서는 네트워크를 통해 파일이 공유될 수 있음
+  - NFS는 분산 환경에서의 대표적인 파일 공유 방법임
+
+![image-20230328235540038](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328235540038.png) 
+
+- 클라이언트는 어떤 file system이든 상관없이 VFS Interface를 통해 접근
+  - NFS를 통해 다른 컴퓨터의 file system도 접근할 수 있음
+
