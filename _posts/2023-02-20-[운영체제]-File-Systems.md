@@ -512,7 +512,7 @@ last_modified_at: 2023-02-20T12:10:55-04:00
 
 - ![image-20230329232939646](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230329232939646.png) 
 
-  - 프로그램은 파일 시스템에 저장되어 있다가 
+  - 프로그램은 파일 시스템에 저장되어 있다가,
 
     실행파일을 실행시키면 프로세스가 되고 독자적인 주소 공간이 생성됨
 
@@ -524,11 +524,11 @@ last_modified_at: 2023-02-20T12:10:55-04:00
 
   ![image-20230329234725736](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230329234725736.png) 
 
- 
+
 
 ## 참고
 
-<a name="footnote_1">1</a>. RPC와 XDR
+<a name="footnote_1">1</a>. RPC와 XDR 
 
 https://leejonggun.tistory.com/9
 
