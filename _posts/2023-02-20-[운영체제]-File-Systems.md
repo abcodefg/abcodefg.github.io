@@ -417,5 +417,129 @@ last_modified_at: 2023-02-20T12:10:55-04:00
 ![image-20230328235540038](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230328235540038.png) 
 
 - 클라이언트는 어떤 file system이든 상관없이 VFS Interface를 통해 접근
-  - NFS를 통해 다른 컴퓨터의 file system도 접근할 수 있음
 
+- NFS를 통해 다른 컴퓨터의 file system도 접근할 수 있음
+
+  - 클라이언트와 서버 모두 NFS 모듈을 가지고 있어야 함
+
+  - 참고 : RPC와 XDR<sup>[1](#footnote_1)</sup>
+
+    - **RPC(Remote Procedure Call)**
+
+      - 상호 미리 정의된 규격을 준수하여 원격에서 동작하고 있는 프로세스에 포함된 함수를 호출 가능하게 하는 프로세스 간 통신기술
+      - 일반적으로 프로세스는 자신의 주소공간(address space) 안에 존재하는 함수를 호출하여 실행가능하지만, 
+
+      RPC를 사용하면 다른 주소공간에서 동작하는 프로세스의 함수를 실행할 수 있음
+
+      - 분산 컴퓨팅 환경에서 프로세스 간 상호 통신 및 컴퓨팅 자원의 효율적인 사용을 위해 발전된 기술
+
+    - **XDR(eXternal Data Representation)**
+
+      - 하드웨어/소프트웨어 아키텍쳐가 서로 다른 컴퓨터 시스템들 간의 데이터 전송을 위한 표준 데이터 형식
+      - 로컬 데이터 표현 형식(local representation)을 XDR로 변환하는 것을 인코딩(encoding),
+
+        XDR을 로컬 표현 형식으로 변환하는 것을 디코딩(decoding)이라고 함
+      
+
+
+
+## Page Cache와 Buffer Cache 비교
+
+- **Page Cache**
+  - **Virtual memory**의 paging system에서 사용하는 page frame을 caching의 관점에서 설명하는 용어
+  
+  - Memory-mapped I/O를 쓰는 경우 file의 I/O에서도 page cache 사용
+    - **Memory-mapped I/O**<sup>[2](#footnote_2)</sup>
+      - **File의 일부를 virtual memory에 mapping** 시킴
+      - **매핑시킨 영역에 대한 메모리 접근 연산**은 파일의 입출력을 수행하게 함
+      - open() -> read() / write() 시스템 콜을 통해 접근하는 방법과 대비됨
+  
+  - 이미 메모리에 존재하는 데이터에 대해서는 하드웨어적인 주소변환만 하고 시스템 콜이 발생하지 않음
+  
+    -> OS가 접근 시간 /  횟수 등의 정보를 완전하게 알 수 없음
+  
+    -> LRU, LFU 사용 불가, Clock 알고리즘 사용
+  
+- **Buffer Cache**
+  - **파일시스템**을 통한 I/O 연산은 메모리의 특정 영역인 buffer cache 사용
+  
+  - File 사용의 locality 활용
+    - 한 번 읽어 온 block에 대한 후속 요청시 buffer cache에서 즉시 전달
+    
+  - 모든 프로세스가 공용으로 사용
+  
+  - Replacement algorithm 필요 (LRU, LFU 등)
+  
+  - 파일에 접근할 때는 시스템 콜이 반드시 발생
+  
+    -> OS가 접근 시간 / 횟수 등의 정보를 완전하게 알 수 있음
+  
+    -> LRU, LFU 사용 가능
+
+![image-20230329163348819](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230329163348819.png) 
+
+
+
+- **Unified Buffer Cache**
+
+  - 최근의 OS에서는 기존의 buffer cache가 page cache에 통합됨
+
+  - buffer cache도 페이지 단위로 관리
+
+    - OS가 buffer cache 공간을 따로 두지 않고 필요에 따라서 page cache 공간을 할당해서 사용
+
+      
+
+- 여러가지 file I/O 방식 비교![image-20230329223142476](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230329223142476.png) 
+
+  - **read(), write() 시스템 콜을 사용하는 I/O**
+
+    - 운영체제가 해당하는 파일 내용이 buffer cache에 있는지 확인하고 없으면 파일 시스템에서 가져와서 프로세스에 전달
+
+  - **memory-mapped I/O**
+
+    - **mmap()** 시스템 콜을 통해 메모리의 특정 공간에 파일을 매핑<sup>[3](#footnote_3)</sup>
+
+    - 운영체제가 파일 시스템에서 buffer cache로 파일 내용을 읽어오는 것까지는 동일하지만
+
+      그 내용을 page cache에 copy
+
+    - 이후 page cache에 올라온 내용에 대해서는 OS의 간섭 없이 자신의 메모리를 접근하듯이 파일 I/O를 수행할 수 있음
+
+  - **Unified Buffer Cache를 이용하는 File I/O**
+
+    - Memory Mapped I/O의 경우 buffer cache가 별도로 있지 않기 때문에 보다 단순한 경로를 거침
+
+- ![image-20230329232939646](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230329232939646.png) 
+
+  - 프로그램은 파일 시스템에 저장되어 있다가 
+
+    실행파일을 실행시키면 프로세스가 되고 독자적인 주소 공간이 생성됨
+
+    당장 필요한 부분은 물리적인 메모리에 올라가고 나머지는 swap area로 쫓겨남
+
+  - 프로세스의 메모리 영역 중 code 부분은 쫓겨날 때 swap area로 내려가지 않음
+
+    -> code는 read only이고 이미 파일 시스템의 실행파일에 저장되어 있기 때문에
+
+  ![image-20230329234725736](C:\Users\jodic\AppData\Roaming\Typora\typora-user-images\image-20230329234725736.png) 
+
+ 
+
+## 참고
+
+<a name="footnote_1">1</a>. RPC와 XDR
+
+https://leejonggun.tistory.com/9
+
+https://www.geeksforgeeks.org/remote-procedure-call-rpc-in-operating-system/
+
+https://www.geeksforgeeks.org/presentation-layer-in-osi-model/
+
+<a name="footnote_2">2</a>. Memory Mapped I/O와 I/O Mapped I/O
+
+https://code-lab1.tistory.com/204
+
+<a name="footnote_3">3</a>. mmap()
+
+https://devraphy.tistory.com/428
